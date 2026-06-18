@@ -1,0 +1,6 @@
+{
+  "name": "Jugada Maestra",
+  "description": "Sistema de gestión para el club de fútbol amateur Los Halcones de Don Rafa. Permite administrar categorías, registrar asistencias y pagos mensuales, y ofrece un portal para padres con calendarios e información de cuotas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
