@@ -300,8 +300,21 @@ export default function ParentsPortal({
           totalAmount: getMonthlyFee(selectedPlayer.category)
         });
       } else {
-        // Safe mock card/debito instantly register
-        onRegisterParentPayment(selectedPlayer.id, payingMonth);
+        // Safe card/debito mock also goes to pending voucher queue
+        const ref = `WP-${Math.floor(Math.random() * 900000) + 100000}`;
+        onSendVoucher({
+          parentName: loggedParentName || selectedPlayer.parentName || 'Apoderado Los Halcones',
+          parentPhone: loggedParentPhone || selectedPlayer.phone || 'S/N',
+          message: `Pago Webpay de Crédito/Débito (Simulado). Autorización para cuota de ${payingMonth} de ${selectedPlayer.name}.`,
+          students: [{
+            playerId: selectedPlayer.id,
+            playerName: selectedPlayer.name,
+            category: selectedPlayer.category,
+            months: [payingMonth]
+          }],
+          referenceCode: ref,
+          totalAmount: getMonthlyFee(selectedPlayer.category)
+        });
       }
       setIsProcessing(false);
       setPaymentStep('success');
@@ -630,6 +643,10 @@ export default function ParentsPortal({
                                     <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[9px] tracking-tight px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs">
                                       <Check className="w-3 h-3 stroke-[3]" /> RECIBIDO
                                     </span>
+                                  ) : vouchers.some(v => v.status === 'pending' && v.students.some(s => s.playerId === child.id && s.months.includes(pay.month))) ? (
+                                    <span className="bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[9px] tracking-tight px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs">
+                                      <Clock className="w-3 h-3 stroke-[2] text-amber-600" /> EN REVISIÓN
+                                    </span>
                                   ) : (
                                     <button
                                       type="button"
@@ -754,6 +771,10 @@ export default function ParentsPortal({
                             {isPaid ? (
                               <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px] tracking-tight px-3 py-1 rounded-lg flex items-center gap-1">
                                 <Check className="w-3 h-3 stroke-[3]" /> RECIBIDO
+                              </span>
+                            ) : vouchers.some(v => v.status === 'pending' && v.students.some(s => s.playerId === selectedPlayer?.id && s.months.includes(pay.month))) ? (
+                              <span className="bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[10px] tracking-tight px-3 py-1 rounded-lg flex items-center gap-1">
+                                <Clock className="w-3 h-3 stroke-[2] text-amber-600" /> EN REVISIÓN
                               </span>
                             ) : (
                               <button
@@ -1487,18 +1508,10 @@ export default function ParentsPortal({
 
                   <div className="space-y-2">
                     <h3 className="text-2xl font-black text-slate-800 tracking-tight">
-                      {paymentMethod === 'card' ? '¡Pago Autorizado Exitosamente!' : '¡Comprobante Enviado!'}
+                      {paymentMethod === 'card' ? '¡Pago Recibido en Simulación!' : '¡Comprobante de Pago Enviado!'}
                     </h3>
                     <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed animate-fade-in">
-                      {paymentMethod === 'card' ? (
-                        <span>
-                          La cuota de <strong>{payingMonth} 2026</strong> por <strong>${getMonthlyFee(selectedPlayer.category).toLocaleString('es-CL')} CLP</strong> se ha actualizado en el cuaderno digital de Don Rafa de inmediato.
-                        </span>
-                      ) : (
-                        <span>
-                          Su declaración del de pago de la cuota de <strong>{payingMonth} 2026</strong> por <strong>${getMonthlyFee(selectedPlayer.category).toLocaleString('es-CL')} CLP</strong> se ha enviado a Don Rafa. Quedará como <strong>"Pendiente de Aprobación"</strong> hasta que el administrador verifique los fondos y lo apruebe o rechace en su panel.
-                        </span>
-                      )}
+                      Su declaración de pago de la cuota de <strong>{payingMonth} 2026</strong> por <strong>${getMonthlyFee(selectedPlayer.category).toLocaleString('es-CL')} CLP</strong> se ha recibido. Quedará en estado <strong>"Pendiente de Aprobación"</strong> hasta que Don Rafa valide los fondos recibidos en su panel de administración.
                     </p>
                   </div>
 
