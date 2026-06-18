@@ -49,3 +49,21 @@ export interface Announcement {
   active: boolean;
 }
 
+export interface PaymentVoucher {
+  id: string;
+  parentName: string;
+  parentPhone: string;
+  message: string;
+  students: {
+    playerId: string;
+    playerName: string;
+    category: Category;
+    months: string[];
+  }[];
+  referenceCode: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  totalAmount: number;
+}
+
+

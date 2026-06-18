@@ -6,7 +6,7 @@ import {
   ArrowRight, Key, Mail, User, Info, CheckCircle2, ChevronRight,
   LogOut, Phone, ShieldCheck
 } from 'lucide-react';
-import { Player, Payment, Attendance, Match, Announcement, Category } from './types';
+import { Player, Payment, Attendance, Match, Announcement, Category, PaymentVoucher } from './types';
 import { 
   initialPlayers, initialPayments, initialAttendance, initialMatches, initialAnnouncements, getMonthlyFee 
 } from './initialData';
@@ -41,7 +41,39 @@ export default function App() {
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [vouchers, setVouchers] = useState<PaymentVoucher[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  // Default demo vouchers for simulation
+  const getDefaultVouchers = (): PaymentVoucher[] => [
+    {
+      id: 'voucher_demo_1',
+      parentName: 'Laura Silva',
+      parentPhone: '5512345678',
+      message: 'Envío de boucher de pago de mis hijos Mateo Gómez y Luis Sánchez de la categoría Infantil y Adulto respectivamente. Pagos correspondientes al mes de Junio.',
+      students: [
+        { playerId: 'p1', playerName: 'Mateo Gómez', category: 'Infantil', months: ['Junio'] },
+        { playerId: 'p41', playerName: 'Luis Sánchez', category: 'Adulto', months: ['Junio'] }
+      ],
+      referenceCode: 'TRANS-9901248',
+      status: 'pending',
+      createdAt: '2026-06-18T10:30:00Z',
+      totalAmount: 35000
+    },
+    {
+      id: 'voucher_demo_2',
+      parentName: 'Carlos Pérez',
+      parentPhone: '5523456789',
+      message: 'Hola Don Rafa, le envío el boucher de pago de mi hijo Santiago Pérez de la categoría Infantil para ponerse al día con el mes de Mayo.',
+      students: [
+        { playerId: 'p2', playerName: 'Santiago Pérez', category: 'Infantil', months: ['Mayo'] }
+      ],
+      referenceCode: 'DEP-4491024',
+      status: 'pending',
+      createdAt: '2026-06-18T11:15:00Z',
+      totalAmount: 15000
+    }
+  ];
 
   // Load state from localStorage on startup
   useEffect(() => {
@@ -50,17 +82,61 @@ export default function App() {
     const savedAttendance = localStorage.getItem('halcones_attendance');
     const savedMatches = localStorage.getItem('halcones_matches');
     const savedAnnouncements = localStorage.getItem('halcones_announcements');
+    const savedVouchers = localStorage.getItem('halcones_vouchers');
+    const savedProfile = localStorage.getItem('halcones_active_profile');
+    const savedTeacher = localStorage.getItem('halcones_logged_teacher');
+    const savedParent = localStorage.getItem('halcones_logged_parent');
 
     if (savedPlayers && savedPayments && savedAttendance && savedMatches) {
       try {
-        setPlayers(JSON.parse(savedPlayers));
-        setPayments(JSON.parse(savedPayments));
+        let loadedPlayers = JSON.parse(savedPlayers) as Player[];
+        let loadedPayments = JSON.parse(savedPayments) as Payment[];
+
+        // Migration: If we detect any players still have "Autosuficiente" parentName,
+        // or we have > 15 distinct parent names, re-align with original initialPlayers structure
+        // immediately resolving the cache duplicate/45-parent-names issue!
+        const distinctParents = new Set(loadedPlayers.filter(p => p.status !== 'baja').map(p => p.parentName));
+        if (distinctParents.has('Autosuficiente') || distinctParents.size > 15) {
+          loadedPlayers = loadedPlayers.map(p => {
+            const fresh = initialPlayers.find(ip => ip.id === p.id);
+            if (fresh) {
+              return {
+                ...p,
+                parentName: fresh.parentName,
+                phone: fresh.phone,
+                name: fresh.name,
+                category: fresh.category
+              };
+            }
+            return p;
+          });
+        }
+
+        setPlayers(loadedPlayers);
+        setPayments(loadedPayments);
         setAttendance(JSON.parse(savedAttendance));
         setMatches(JSON.parse(savedMatches));
+
         if (savedAnnouncements) {
           setAnnouncements(JSON.parse(savedAnnouncements));
         } else {
           setAnnouncements(initialAnnouncements);
+        }
+
+        if (savedVouchers) {
+          setVouchers(JSON.parse(savedVouchers));
+        } else {
+          setVouchers(getDefaultVouchers());
+        }
+
+        if (savedProfile) {
+          setActiveProfile(savedProfile as any);
+        }
+        if (savedTeacher) {
+          setLoggedTeacher(JSON.parse(savedTeacher));
+        }
+        if (savedParent) {
+          setLoggedParent(JSON.parse(savedParent));
         }
       } catch (err) {
         console.error("Error loading local storage data, resetting:", err);
@@ -80,7 +156,19 @@ export default function App() {
     localStorage.setItem('halcones_attendance', JSON.stringify(attendance));
     localStorage.setItem('halcones_matches', JSON.stringify(matches));
     localStorage.setItem('halcones_announcements', JSON.stringify(announcements));
-  }, [players, payments, attendance, matches, announcements, isDataLoaded]);
+    localStorage.setItem('halcones_vouchers', JSON.stringify(vouchers));
+    localStorage.setItem('halcones_active_profile', activeProfile);
+    if (loggedTeacher) {
+      localStorage.setItem('halcones_logged_teacher', JSON.stringify(loggedTeacher));
+    } else {
+      localStorage.removeItem('halcones_logged_teacher');
+    }
+    if (loggedParent) {
+      localStorage.setItem('halcones_logged_parent', JSON.stringify(loggedParent));
+    } else {
+      localStorage.removeItem('halcones_logged_parent');
+    }
+  }, [players, payments, attendance, matches, announcements, vouchers, activeProfile, loggedTeacher, loggedParent, isDataLoaded]);
 
   // RESET TO DEFAULT VALUES METHOD
   const resetToInitialData = () => {
@@ -89,6 +177,58 @@ export default function App() {
     setAttendance(initialAttendance);
     setMatches(initialMatches);
     setAnnouncements(initialAnnouncements);
+    setVouchers(getDefaultVouchers());
+  };
+
+  const handleSendVoucher = (newVoucher: Omit<PaymentVoucher, 'id' | 'status' | 'createdAt'>) => {
+    const voucher: PaymentVoucher = {
+      ...newVoucher,
+      id: `voucher_${Date.now()}`,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+    setVouchers(prev => [voucher, ...prev]);
+  };
+
+  const handleApproveVoucher = (voucherId: string) => {
+    const voucher = vouchers.find(v => v.id === voucherId);
+    if (!voucher) return;
+
+    setVouchers(prev => prev.map(v => v.id === voucherId ? { ...v, status: 'approved' } : v));
+
+    setPayments(prevPayments => {
+      let updatedPayments = [...prevPayments];
+
+      voucher.students.forEach(student => {
+        student.months.forEach(month => {
+          const existingIdx = updatedPayments.findIndex(p => p.playerId === student.playerId && p.month === month);
+          if (existingIdx > -1) {
+            updatedPayments[existingIdx] = {
+              ...updatedPayments[existingIdx],
+              status: 'paid',
+              paidDate: new Date().toISOString().split('T')[0]
+            };
+          } else {
+            const fee = getMonthlyFee(student.category);
+            updatedPayments.push({
+              id: `pay_${month.toLowerCase().substring(0, 3)}_${student.playerId}`,
+              playerId: student.playerId,
+              month,
+              year: 2026,
+              status: 'paid',
+              amount: fee,
+              paidDate: new Date().toISOString().split('T')[0]
+            });
+          }
+        });
+      });
+
+      return updatedPayments;
+    });
+  };
+
+  const handleRejectVoucher = (voucherId: string) => {
+    setVouchers(prev => prev.map(v => v.id === voucherId ? { ...v, status: 'rejected' } : v));
   };
 
   // 1. ADD PLAYER HANDLER
@@ -815,6 +955,7 @@ export default function App() {
                 attendance={attendance}
                 matches={matches}
                 announcements={announcements}
+                vouchers={vouchers}
                 onAddPlayer={handleAddPlayer}
                 onDeletePlayer={handleDeletePlayer}
                 onTogglePayment={handleTogglePayment}
@@ -823,6 +964,8 @@ export default function App() {
                 onAddAnnouncement={handleAddAnnouncement}
                 onUpdateAnnouncement={handleUpdateAnnouncement}
                 onDeleteAnnouncement={handleDeleteAnnouncement}
+                onApproveVoucher={handleApproveVoucher}
+                onRejectVoucher={handleRejectVoucher}
               />
             </motion.div>
           )}
@@ -843,10 +986,12 @@ export default function App() {
                 attendance={attendance}
                 matches={matches}
                 announcements={announcements}
+                vouchers={vouchers}
                 onRegisterParentPayment={handleRegisterParentPayment}
                 loggedParentName={loggedParent?.parentName}
                 loggedParentPhone={loggedParent?.phone}
                 onLogout={handleLogout}
+                onSendVoucher={handleSendVoucher}
               />
             </motion.div>
           )}
