@@ -38,6 +38,9 @@ export default function App() {
   // Which profile tab inside the login selection is currently expanded to show details
   const [expandedForm, setExpandedForm] = useState<'none' | 'parents' | 'teacher' | 'rafa'>('none');
 
+  // Collapsible access guides toggle state
+  const [showAccessGuides, setShowAccessGuides] = useState(false);
+
   // Dynamic Core States
   const [players, setPlayers] = useState<Player[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -948,176 +951,201 @@ export default function App() {
               <div className="bg-cyan-50/20 border border-cyan-150/40 p-4 rounded-2xl flex items-start gap-2.5 text-xs text-cyan-800 font-medium">
                 <Info className="w-5 h-5 text-cyan-500 shrink-0 mt-0.5" />
                 <div className="leading-relaxed">
-                  <strong>Nota sobre el ingreso simulado:</strong> Podrás ingresar digitando las credenciales reales de cualquiera de los apoderados o profesores listados abajo en la guía de acceso (con sus nombres de apoderado/alumno y últimos 6 dígitos de número telefónico, o con sus correos y clave RUT).
+                  <strong>Nota sobre el ingreso simulado:</strong> Podrás ingresar digitando las credenciales reales de cualquiera de los apoderados o profesores listados. Hemos resumido las instrucciones de ingreso de prueba en un botón desplegable abajo para tu comodidad.
                 </div>
               </div>
 
-              {/* ACCESO INSTRUCTIONS PANELS INSPIRED BY SCREENSHOT */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                
-                {/* 1. ADMIN / TEACHER MANUAL */}
-                <div className="bg-[#f4fcf8]/90 border border-emerald-250/50 rounded-2xl p-5 text-emerald-950 shadow-xs relative overflow-hidden">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="p-1 rounded-lg bg-emerald-100/60 text-emerald-800">
-                      <Info className="w-4 h-4 text-emerald-700 shrink-0" />
-                    </div>
-                    <h5 className="text-[12.5px] font-black uppercase tracking-tight text-emerald-900 font-sans">
-                      INSTRUCCIONES DE ACCESO (ADMIN / DOCENTES)
-                    </h5>
-                  </div>
-                  
-                  <div className="space-y-3 text-xs text-emerald-950 font-medium font-sans">
-                    {/* Admin Don Rafa */}
-                    <div className="bg-white/80 border border-emerald-100 p-3 rounded-xl space-y-1">
-                      <p className="font-extrabold text-emerald-900 text-xs">
-                        Ingreso administrativo para Don Rafa (RUT: 8.765.432-1)
-                      </p>
-                      <p className="font-mono text-emerald-800 text-[10.5px] selection:bg-emerald-100">
-                        Email: <strong className="font-bold text-emerald-950">rafa@loshalcones.cl</strong> &rarr; Clave (RUT): <strong className="font-black bg-emerald-100/70 px-1.5 py-0.5 rounded text-emerald-950">765432</strong>
-                      </p>
-                    </div>
-
-                    {/* Profe Carlos */}
-                    <div className="bg-white/80 border border-emerald-100 p-3 rounded-xl space-y-1">
-                      <p className="font-extrabold text-emerald-900 text-xs">
-                        Ingreso docente para Carlos Silva (RUT: 14.321.098-7)
-                      </p>
-                      <p className="font-mono text-emerald-800 text-[10.5px] selection:bg-emerald-100">
-                        Email: <strong className="font-bold text-emerald-950">carlos.silva@loshalcones.cl</strong> &rarr; Clave (RUT): <strong className="font-black bg-emerald-100/70 px-1.5 py-0.5 rounded text-emerald-950">321098</strong>
-                      </p>
-                    </div>
-
-                    {/* Dra. María */}
-                    <div className="bg-white/80 border border-emerald-100 p-3 rounded-xl space-y-1">
-                      <p className="font-extrabold text-emerald-900 text-xs">
-                        Ingreso docente para Dra. María Ortiz (RUT: 16.543.210-9)
-                      </p>
-                      <p className="font-mono text-emerald-800 text-[10.5px] selection:bg-emerald-100">
-                        Email: <strong className="font-bold text-emerald-950">maria.ortiz@loshalcones.cl</strong> &rarr; Clave (RUT): <strong className="font-black bg-emerald-100/70 px-1.5 py-0.5 rounded text-emerald-950">543210</strong>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 2. PARENTS MANUAL */}
-                <div className="bg-slate-50/70 border border-slate-200/60 rounded-2xl p-5 text-slate-900 shadow-xs relative overflow-hidden">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="p-1 rounded-lg bg-slate-100 text-slate-800">
-                      <Info className="w-4 h-4 text-slate-600 shrink-0" />
-                    </div>
-                    <h5 className="text-[12.5px] font-black uppercase tracking-tight text-slate-800 font-sans">
-                      GUÍA DE ACCESO (APODERADOS Y ALUMNOS INICIALES)
-                    </h5>
-                  </div>
-                  
-                  <div className="text-[11px] text-slate-500 mb-3 leading-snug">
-                    Por favor, ingresa el <strong>nombre del apoderado o del alumno</strong> y los últimos 6 dígitos de su teléfono como clave:
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-1">
-                    {/* Family 1 */}
-                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
-                      <div>
-                        <p className="font-extrabold text-slate-800"> Laura Silva</p>
-                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Mateo, Lucas, Leonardo, Alan, Alejandro y Luis</span></p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">345678</span>
-                      </div>
-                    </div>
-
-                    {/* Family 2 */}
-                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
-                      <div>
-                        <p className="font-extrabold text-slate-800"> Carlos Pérez</p>
-                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Santiago, Javier, Manuel, Carlos y Gustavo</span></p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">456789</span>
-                      </div>
-                    </div>
-
-                    {/* Family 3 */}
-                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
-                      <div>
-                        <p className="font-extrabold text-slate-800"> María Ruiz</p>
-                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Valentín, Sebastián, Alexis, Héctor y Gabriel</span></p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">567890</span>
-                      </div>
-                    </div>
-
-                    {/* Family 4 */}
-                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
-                      <div>
-                        <p className="font-extrabold text-slate-800"> Rosa Díaz</p>
-                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Diego, Maximiliano, Rodrigo, Jorge y Arturo</span></p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">678901</span>
-                      </div>
-                    </div>
-
-                    {/* Family 5 */}
-                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
-                      <div>
-                        <p className="font-extrabold text-slate-800"> Héctor Castro</p>
-                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Matías, Bryan, Fernando, Ricardo y Óscar</span></p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">789012</span>
-                      </div>
-                    </div>
-
-                    {/* Family 6 */}
-                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
-                      <div>
-                        <p className="font-extrabold text-slate-800"> Sonia López</p>
-                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Thiago, Kevin, Christian, David y Víctor</span></p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">890123</span>
-                      </div>
-                    </div>
-
-                    {/* Family 7 */}
-                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
-                      <div>
-                        <p className="font-extrabold text-slate-800"> Andrés Sosa</p>
-                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Daniel, Emiliano, Roberto y Miguel</span></p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">901234</span>
-                      </div>
-                    </div>
-
-                    {/* Family 8 */}
-                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
-                      <div>
-                        <p className="font-extrabold text-slate-800"> Gabriela Torres</p>
-                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Nicolás, Alejandro, Ian, Felipe y Sergio</span></p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">234567</span>
-                      </div>
-                    </div>
-
-                    {/* Family 9 */}
-                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
-                      <div>
-                        <p className="font-extrabold text-slate-800"> Manuel Vargas</p>
-                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Ángel, Gael, Eduardo, Josué y Francisco</span></p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">556677</span>
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-
+              {/* BOTÓN DESPLEGABLE DE AYUDA DE ACCESO */}
+              <div className="flex flex-col items-center justify-center pt-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAccessGuides(!showAccessGuides)}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-indigo-50 border border-indigo-150/50 hover:bg-indigo-100 text-indigo-900 font-black text-xs transition-all cursor-pointer shadow-xs uppercase tracking-wider focus:outline-hidden"
+                >
+                  <Info className="w-4.5 h-4.5 text-indigo-600" />
+                  <span>{showAccessGuides ? 'Ocultar Guía de Cuentas (Ayuda)' : 'Ver Guía de Cuentas para Ingresar'}</span>
+                  <ChevronRight className={`w-4 h-4 text-indigo-600 transition-transform duration-200 ${showAccessGuides ? 'rotate-90' : ''}`} />
+                </button>
               </div>
+
+              <AnimatePresence>
+                {showAccessGuides && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden w-full"
+                  >
+                    {/* ACCESO INSTRUCTIONS PANELS INSPIRED BY SCREENSHOT */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                      
+                      {/* 1. ADMIN / TEACHER MANUAL */}
+                      <div className="bg-[#f4fcf8]/90 border border-emerald-250/50 rounded-2xl p-5 text-emerald-950 shadow-xs relative overflow-hidden">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="p-1 rounded-lg bg-emerald-100/60 text-emerald-800">
+                            <Info className="w-4 h-4 text-emerald-700 shrink-0" />
+                          </div>
+                          <h5 className="text-[12.5px] font-black uppercase tracking-tight text-emerald-900 font-sans">
+                            INSTRUCCIONES DE ACCESO (ADMIN / DOCENTES)
+                          </h5>
+                        </div>
+                        
+                        <div className="space-y-3 text-xs text-emerald-950 font-medium font-sans">
+                          {/* Admin Don Rafa */}
+                          <div className="bg-white/80 border border-emerald-100 p-3 rounded-xl space-y-1">
+                            <p className="font-extrabold text-emerald-900 text-xs">
+                              Ingreso administrativo para Don Rafa (RUT: 8.765.432-1)
+                            </p>
+                            <p className="font-mono text-emerald-800 text-[10.5px] selection:bg-emerald-100">
+                              Email: <strong className="font-bold text-emerald-950">rafa@loshalcones.cl</strong> &rarr; Clave (RUT): <strong className="font-black bg-emerald-100/70 px-1.5 py-0.5 rounded text-emerald-950">765432</strong>
+                            </p>
+                          </div>
+
+                          {/* Profe Carlos */}
+                          <div className="bg-white/80 border border-emerald-100 p-3 rounded-xl space-y-1">
+                            <p className="font-extrabold text-emerald-900 text-xs">
+                              Ingreso docente para Carlos Silva (RUT: 14.321.098-7)
+                            </p>
+                            <p className="font-mono text-emerald-800 text-[10.5px] selection:bg-emerald-100">
+                              Email: <strong className="font-bold text-emerald-950">carlos.silva@loshalcones.cl</strong> &rarr; Clave (RUT): <strong className="font-black bg-emerald-100/70 px-1.5 py-0.5 rounded text-emerald-950">321098</strong>
+                            </p>
+                          </div>
+
+                          {/* Dra. María */}
+                          <div className="bg-white/80 border border-emerald-100 p-3 rounded-xl space-y-1">
+                            <p className="font-extrabold text-emerald-900 text-xs">
+                              Ingreso docente para Dra. María Ortiz (RUT: 16.543.210-9)
+                            </p>
+                            <p className="font-mono text-emerald-800 text-[10.5px] selection:bg-emerald-100">
+                              Email: <strong className="font-bold text-emerald-950">maria.ortiz@loshalcones.cl</strong> &rarr; Clave (RUT): <strong className="font-black bg-emerald-100/70 px-1.5 py-0.5 rounded text-emerald-950">543210</strong>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 2. PARENTS MANUAL */}
+                      <div className="bg-slate-50/70 border border-slate-200/60 rounded-2xl p-5 text-slate-900 shadow-xs relative overflow-hidden">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="p-1 rounded-lg bg-slate-100 text-slate-800">
+                            <Info className="w-4 h-4 text-slate-600 shrink-0" />
+                          </div>
+                          <h5 className="text-[12.5px] font-black uppercase tracking-tight text-slate-800 font-sans">
+                            GUÍA DE ACCESO (APODERADOS Y ALUMNOS INICIALES)
+                          </h5>
+                        </div>
+                        
+                        <div className="text-[11px] text-slate-500 mb-3 leading-snug">
+                          Por favor, ingresa el <strong>nombre del apoderado o del alumno</strong> y los últimos 6 dígitos de su teléfono como clave:
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-1">
+                          {/* Family 1 */}
+                          <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                            <div>
+                              <p className="font-extrabold text-slate-800"> Laura Silva</p>
+                              <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Mateo, Lucas, Leonardo, Alan, Alejandro y Luis</span></p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">345678</span>
+                            </div>
+                          </div>
+
+                          {/* Family 2 */}
+                          <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                            <div>
+                              <p className="font-extrabold text-slate-800"> Carlos Pérez</p>
+                              <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Santiago, Javier, Manuel, Carlos y Gustavo</span></p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">456789</span>
+                            </div>
+                          </div>
+
+                          {/* Family 3 */}
+                          <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                            <div>
+                              <p className="font-extrabold text-slate-800"> María Ruiz</p>
+                              <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Valentín, Sebastián, Alexis, Héctor y Gabriel</span></p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">567890</span>
+                            </div>
+                          </div>
+
+                          {/* Family 4 */}
+                          <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                            <div>
+                              <p className="font-extrabold text-slate-800"> Rosa Díaz</p>
+                              <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Diego, Maximiliano, Rodrigo, Jorge y Arturo</span></p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">678901</span>
+                            </div>
+                          </div>
+
+                          {/* Family 5 */}
+                          <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                            <div>
+                              <p className="font-extrabold text-slate-800"> Héctor Castro</p>
+                              <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Matías, Bryan, Fernando, Ricardo y Óscar</span></p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">789012</span>
+                            </div>
+                          </div>
+
+                          {/* Family 6 */}
+                          <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                            <div>
+                              <p className="font-extrabold text-slate-800"> Sonia López</p>
+                              <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Thiago, Kevin, Christian, David y Víctor</span></p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">890123</span>
+                            </div>
+                          </div>
+
+                          {/* Family 7 */}
+                          <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                            <div>
+                              <p className="font-extrabold text-slate-800"> Andrés Sosa</p>
+                              <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Daniel, Emiliano, Roberto y Miguel</span></p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">901234</span>
+                            </div>
+                          </div>
+
+                          {/* Family 8 */}
+                          <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                            <div>
+                              <p className="font-extrabold text-slate-800"> Gabriela Torres</p>
+                              <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Nicolás, Alejandro, Ian, Felipe y Sergio</span></p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">234567</span>
+                            </div>
+                          </div>
+
+                          {/* Family 9 */}
+                          <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                            <div>
+                              <p className="font-extrabold text-slate-800"> Manuel Vargas</p>
+                              <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Ángel, Gael, Eduardo, Josué y Francisco</span></p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">556677</span>
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 
