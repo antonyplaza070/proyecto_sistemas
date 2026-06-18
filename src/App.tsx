@@ -22,6 +22,9 @@ export default function App() {
   const [teacherEmailInput, setTeacherEmailInput] = useState('');
   const [teacherRutInput, setTeacherRutInput] = useState('');
   
+  const [adminEmailInput, setAdminEmailInput] = useState('');
+  const [adminRutInput, setAdminRutInput] = useState('');
+  
   const [parentNameInput, setParentNameInput] = useState('');
   const [parentPhoneInput, setParentPhoneInput] = useState('');
 
@@ -362,23 +365,30 @@ export default function App() {
   };
 
   // --- CREDENTIAL VALIDATION LOGIC ---
-  // Teachers enter with email and the 6 numbers of the RUT before verified digit.
+  // Helper to extract last 6 digits before dash from a RUT like "14.321.098-7"
+  const getRutLast6BeforeDash = (rutStr: string): string => {
+    const beforeDash = rutStr.split('-')[0] || '';
+    const cleaned = beforeDash.replace(/\D/g, ''); // only digits
+    return cleaned.slice(-6);
+  };
+
+  // Teachers enter with email and the last 6 numbers of the RUT before verified digit (the dash).
   const handleTeacherLoginSubmit = (e: FormEvent) => {
     e.preventDefault();
     setLoginError(null);
 
     const email = teacherEmailInput.trim().toLowerCase();
-    const cleanRut = teacherRutInput.replace(/\D/g, ''); // Extract only numbers
+    const cleanInputRut = teacherRutInput.replace(/\D/g, ''); // Extract only numbers
 
-    if (!email || !cleanRut) {
+    if (!email || !cleanInputRut) {
       setLoginError('Complete todos los campos de credencial.');
       return;
     }
 
-    // Carlos Silva -> RUT: 14.321.098-7 (RUT numbers before DV are 14321098, lets support subset 143210, 321098, or full)
+    // Profe Carlos Silva -> RUT: 14.321.098-7 (last 6 before dash is "321098")
     if (email === 'carlos.silva@loshalcones.cl') {
-      const validRut = cleanRut === '143210' || cleanRut === '321098' || cleanRut === '14321098';
-      if (validRut) {
+      const expectedCode = getRutLast6BeforeDash('14.321.098-7'); // "321098"
+      if (cleanInputRut === expectedCode || cleanInputRut === '14321098') {
         setLoggedTeacher({
           name: 'Profe Carlos Silva',
           category: 'Infantil',
@@ -390,10 +400,10 @@ export default function App() {
       }
     }
 
-    // Maria Ortiz -> RUT: 16.543.210-9 (RUT digits before DV are 16543210, let's accept subsets)
+    // Maria Ortiz -> RUT: 16.543.210-9 (last 6 before dash is "543210")
     if (email === 'maria.ortiz@loshalcones.cl') {
-      const validRut = cleanRut === '165432' || cleanRut === '543210' || cleanRut === '16543210';
-      if (validRut) {
+      const expectedCode = getRutLast6BeforeDash('16.543.210-9'); // "543210"
+      if (cleanInputRut === expectedCode || cleanInputRut === '16543210') {
         setLoggedTeacher({
           name: 'Dra. María Ortiz',
           category: 'Juvenil',
@@ -405,10 +415,10 @@ export default function App() {
       }
     }
 
-    // Don Rafa (can access as trainer as well)
+    // Don Rafa (can access as trainer as well) -> RUT: 8.765.432-1 (last 6 before dash is "765432")
     if (email === 'rafa@loshalcones.cl') {
-      const validRut = cleanRut === '876543' || cleanRut === '765432' || cleanRut === '8765432';
-      if (validRut) {
+      const expectedCode = getRutLast6BeforeDash('8.765.432-1'); // "765432"
+      if (cleanInputRut === expectedCode || cleanInputRut === '8765432') {
         setLoggedTeacher({
           name: 'Don Rafa Admon.',
           category: 'Adulto',
@@ -420,7 +430,33 @@ export default function App() {
       }
     }
 
-    setLoginError('Profesor no encontrado o números de RUT incorrectos.');
+    setLoginError('Profesor no encontrado o clave de RUT incorrecta (deben ser los 6 últimos dígitos antes del guion).');
+  };
+
+  // Administrator Don Rafa login with email & RUT last 6 digits before dash
+  const handleAdminLoginSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+
+    const email = adminEmailInput.trim().toLowerCase();
+    const cleanInputRut = adminRutInput.replace(/\D/g, '');
+
+    if (!email || !cleanInputRut) {
+      setLoginError('Complete todos los campos para el administrador.');
+      return;
+    }
+
+    if (email === 'rafa@loshalcones.cl') {
+      const expectedCode = getRutLast6BeforeDash('8.765.432-1'); // "765432"
+      if (cleanInputRut === expectedCode || cleanInputRut === '8765432') {
+        setActiveProfile('rafa');
+        setExpandedForm('none');
+        setLoginError(null);
+        return;
+      }
+    }
+
+    setLoginError('Credenciales de administrador incorrectas (use rafa@loshalcones.cl y clave 765432).');
   };
 
   // Parents enter with their name and the last 6 digits of their phone.
@@ -432,17 +468,21 @@ export default function App() {
     const phoneInputDigits = parentPhoneInput.trim().replace(/\D/g, '');
 
     if (!name || phoneInputDigits.length < 6) {
-      setLoginError('Complete su nombre y al menos los últimos 6 dígitos del teléfono.');
+      setLoginError('Complete su nombre y los últimos 6 dígitos de su número telefónico.');
       return;
     }
 
     // Search players array to see if a parent matches
     const matchedPlayer = players.find(p => {
-      if (p.status === 'baja' || !p.parentName) return false;
-      const matchName = p.parentName.trim().toLowerCase() === name || p.name.trim().toLowerCase() === name;
-      const last6DigitsOfPhone = p.phone.trim().slice(-6);
+      if (p.status === 'baja') return false;
+      const matchParentName = p.parentName && p.parentName.trim().toLowerCase() === name;
+      const matchStudentName = p.name.trim().toLowerCase() === name;
+      
+      const cleanPhone = p.phone.replace(/\D/g, '');
+      const last6DigitsOfPhone = cleanPhone.slice(-6);
       const matchPhone = phoneInputDigits.slice(-6) === last6DigitsOfPhone;
-      return matchName && matchPhone;
+      
+      return (matchParentName || matchStudentName) && matchPhone;
     });
 
     if (matchedPlayer) {
@@ -453,7 +493,7 @@ export default function App() {
       setActiveProfile('parents');
       setLoginError(null);
     } else {
-      setLoginError('No se encontró ningún alumno asociado con ese nombre de apoderado y teléfono.');
+      setLoginError('No se encontró ningún registro con ese nombre de apoderado/alumno y últimos 6 dígitos de teléfono.');
     }
   };
 
@@ -543,6 +583,8 @@ export default function App() {
     setExpandedForm('none');
     setTeacherEmailInput('');
     setTeacherRutInput('');
+    setAdminEmailInput('');
+    setAdminRutInput('');
     setParentNameInput('');
     setParentPhoneInput('');
     setLoginError(null);
@@ -710,7 +752,7 @@ export default function App() {
 
                           <div className="sm:col-span-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2">
                             <div className="text-[11px] text-slate-400 font-semibold">
-                              💡 Ingresa <strong className="text-slate-600">Laura Silva / 345678</strong> (tutor de Mateo) o usa los accesos rápidos de abajo.
+                              💡 Ejemplos autorizados: <strong className="text-slate-600">Laura Silva / 345678</strong> o <strong className="text-slate-600">Carlos Pérez / 456789</strong> (Ver guía completa abajo).
                             </div>
                             <button
                               type="submit"
@@ -720,56 +762,6 @@ export default function App() {
                             </button>
                           </div>
                         </form>
-
-                        {/* Direct bypass short-loaders */}
-                        <div className="bg-cyan-50/25 border border-dashed border-cyan-200 p-4 rounded-xl space-y-3">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-cyan-900 font-mono block">
-                            🔑 Accesos Directos de Prueba (Simulador con todos los apoderados):
-                          </span>
-                          
-                          {/* Showcase principal buttons */}
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleShortcutLogin('laura')}
-                              className="bg-white hover:bg-cyan-50 border border-cyan-100 text-cyan-950 font-bold text-[10px] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                            >
-                              👩‍👦 Madre: Laura Silva (Mateo Gómez)
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleShortcutLogin('carlos_perez')}
-                              className="bg-white hover:bg-cyan-50 border border-cyan-100 text-cyan-950 font-bold text-[10px] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                            >
-                              👨‍👦 Padre: Carlos Pérez (Santiago Pérez)
-                            </button>
-                          </div>
-
-                          {/* Selector for all other parents/students */}
-                          <div className="pt-2 border-t border-dashed border-cyan-150 space-y-1.5">
-                            <label className="text-[10px] font-extrabold text-slate-500 block">
-                              ¿Quieres probar otro apoderado? Selecciona cualquiera de las {parentShortcutsList.length} familias del Club:
-                            </label>
-                            <div className="flex gap-2">
-                              <select
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  if (!val) return;
-                                  const [parentName, phone] = val.split('|__split__|');
-                                  handleSelectParentShortcut(parentName, phone);
-                                }}
-                                className="flex-1 bg-white border border-cyan-200 text-slate-700 font-bold text-xs px-3 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
-                              >
-                                <option value="">-- Seleccionar un apoderado del listado oficial --</option>
-                                {parentShortcutsList.map((item, idx) => (
-                                  <option key={idx} value={`${item.parentName}|__split__|${item.phone}`}>
-                                    {item.parentName} ({item.childrenNames})
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -828,12 +820,12 @@ export default function App() {
                           <div className="space-y-1">
                             <label className="font-bold text-slate-700 flex items-center gap-1">
                               <Key className="w-3.5 h-3.5 text-teal-500" />
-                              6 primeros números del RUT antes del DV:
+                              6 últimos números de su RUT antes del guion:
                             </label>
                             <input
                               type="text"
                               required
-                              placeholder="Ej: 143210 (de Carlos Silva)"
+                              placeholder="Ej: 321098 (últimos 6 antes del -"
                               value={teacherRutInput}
                               onChange={(e) => setTeacherRutInput(e.target.value)}
                               className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-cyan-500 font-bold text-slate-705 font-mono"
@@ -842,7 +834,7 @@ export default function App() {
 
                           <div className="sm:col-span-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2">
                             <div className="text-[11px] text-slate-400 font-semibold">
-                              💡 Ingresa <strong className="text-slate-600">carlos.silva@loshalcones.cl / 143210</strong> de prueba o usa los accesos rápidos.
+                              💡 Profesores autorizados: <strong className="text-slate-600">carlos.silva@loshalcones.cl / 321098</strong> o <strong className="text-slate-600">maria.ortiz@loshalcones.cl / 543210</strong>.
                             </div>
                             <button
                               type="submit"
@@ -852,25 +844,6 @@ export default function App() {
                             </button>
                           </div>
                         </form>
-
-                        {/* Direct bypass short-loaders */}
-                        <div className="bg-teal-50/25 border border-dashed border-teal-200 p-3 rounded-xl space-y-2">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-teal-800 font-mono block">Botones de Acceso Directo de Prueba:</span>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              onClick={() => handleShortcutLogin('carlos')}
-                              className="bg-white hover:bg-teal-50 border border-teal-100 text-teal-900 font-bold text-[10px] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                            >
-                              🔑 Profe Carlos (Categoría Infantil)
-                            </button>
-                            <button
-                              onClick={() => handleShortcutLogin('maria')}
-                              className="bg-white hover:bg-teal-50 border border-teal-100 text-teal-900 font-bold text-[10px] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                            >
-                              🔑 Dra. María Ortiz (Categoría Juvenil)
-                            </button>
-                          </div>
-                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -908,20 +881,63 @@ export default function App() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3 overflow-hidden"
+                        className="mt-4 pt-4 border-t border-slate-100 space-y-4 overflow-hidden"
                       >
-                        <div className="text-[11px] font-bold text-slate-500 leading-tight">
-                          🔒 Al presionar ingresar, accederás directamente como el administrador global del club con control total de las planillas.
-                        </div>
-                        <button
-                          onClick={() => {
-                            setActiveProfile('rafa');
-                            setExpandedForm('none');
-                          }}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-5 py-3 rounded-xl mt-2 sm:mt-0 shadow-md shrink-0 cursor-pointer text-center"
-                        >
-                          Confirmar Ingreso como Admin
-                        </button>
+                        <form onSubmit={handleAdminLoginSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans">
+                          <div className="space-y-1">
+                            <label className="font-bold text-slate-700 flex items-center gap-1">
+                              <Mail className="w-3.5 h-3.5 text-indigo-505" />
+                              Correo del Administrador:
+                            </label>
+                            <input
+                              type="email"
+                              required
+                              placeholder="Ej: rafa@loshalcones.cl"
+                              value={adminEmailInput}
+                              onChange={(e) => setAdminEmailInput(e.target.value)}
+                              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-cyan-500 font-bold text-slate-705 font-mono"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-bold text-slate-700 flex items-center gap-1">
+                              <Key className="w-3.5 h-3.5 text-indigo-505" />
+                              6 últimos números de su RUT antes de guion:
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Ej: 765432"
+                              value={adminRutInput}
+                              onChange={(e) => setAdminRutInput(e.target.value)}
+                              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-cyan-500 font-bold text-slate-705 font-mono"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2">
+                            <div className="text-[11px] text-slate-400 font-semibold">
+                              💡 Ingresa <strong className="text-slate-600">rafa@loshalcones.cl / 765432</strong> de prueba o presiona el botón rápido.
+                            </div>
+                            <div className="flex gap-2 w-full sm:w-auto">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveProfile('rafa');
+                                  setExpandedForm('none');
+                                }}
+                                className="flex-1 sm:flex-initial bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer text-center"
+                              >
+                                Acceso Rápido
+                              </button>
+                              <button
+                                type="submit"
+                                className="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-sm cursor-pointer text-center whitespace-nowrap"
+                              >
+                                Validar Administrador
+                              </button>
+                            </div>
+                          </div>
+                        </form>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -931,11 +947,177 @@ export default function App() {
 
               <div className="bg-cyan-50/20 border border-cyan-150/40 p-4 rounded-2xl flex items-start gap-2.5 text-xs text-cyan-800 font-medium">
                 <Info className="w-5 h-5 text-cyan-500 shrink-0 mt-0.5" />
-                <div className="leading-relaxed leading-relaxed">
-                  <strong>Nota sobre el ingreso simulado:</strong> Tal como solicitaste, para mayor facilidad de pruebas no hemos forzado contraseñas estrictas. Podrás ingresar simuladamente de forma libre haciendo clic en expandir "INGRESAR" en cada tarjeta, validando datos reales o presionando los accesos rápidos.
+                <div className="leading-relaxed">
+                  <strong>Nota sobre el ingreso simulado:</strong> Podrás ingresar digitando las credenciales reales de cualquiera de los apoderados o profesores listados abajo en la guía de acceso (con sus nombres de apoderado/alumno y últimos 6 dígitos de número telefónico, o con sus correos y clave RUT).
                 </div>
               </div>
 
+              {/* ACCESO INSTRUCTIONS PANELS INSPIRED BY SCREENSHOT */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                
+                {/* 1. ADMIN / TEACHER MANUAL */}
+                <div className="bg-[#f4fcf8]/90 border border-emerald-250/50 rounded-2xl p-5 text-emerald-950 shadow-xs relative overflow-hidden">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-1 rounded-lg bg-emerald-100/60 text-emerald-800">
+                      <Info className="w-4 h-4 text-emerald-700 shrink-0" />
+                    </div>
+                    <h5 className="text-[12.5px] font-black uppercase tracking-tight text-emerald-900 font-sans">
+                      INSTRUCCIONES DE ACCESO (ADMIN / DOCENTES)
+                    </h5>
+                  </div>
+                  
+                  <div className="space-y-3 text-xs text-emerald-950 font-medium font-sans">
+                    {/* Admin Don Rafa */}
+                    <div className="bg-white/80 border border-emerald-100 p-3 rounded-xl space-y-1">
+                      <p className="font-extrabold text-emerald-900 text-xs">
+                        Ingreso administrativo para Don Rafa (RUT: 8.765.432-1)
+                      </p>
+                      <p className="font-mono text-emerald-800 text-[10.5px] selection:bg-emerald-100">
+                        Email: <strong className="font-bold text-emerald-950">rafa@loshalcones.cl</strong> &rarr; Clave (RUT): <strong className="font-black bg-emerald-100/70 px-1.5 py-0.5 rounded text-emerald-950">765432</strong>
+                      </p>
+                    </div>
+
+                    {/* Profe Carlos */}
+                    <div className="bg-white/80 border border-emerald-100 p-3 rounded-xl space-y-1">
+                      <p className="font-extrabold text-emerald-900 text-xs">
+                        Ingreso docente para Carlos Silva (RUT: 14.321.098-7)
+                      </p>
+                      <p className="font-mono text-emerald-800 text-[10.5px] selection:bg-emerald-100">
+                        Email: <strong className="font-bold text-emerald-950">carlos.silva@loshalcones.cl</strong> &rarr; Clave (RUT): <strong className="font-black bg-emerald-100/70 px-1.5 py-0.5 rounded text-emerald-950">321098</strong>
+                      </p>
+                    </div>
+
+                    {/* Dra. María */}
+                    <div className="bg-white/80 border border-emerald-100 p-3 rounded-xl space-y-1">
+                      <p className="font-extrabold text-emerald-900 text-xs">
+                        Ingreso docente para Dra. María Ortiz (RUT: 16.543.210-9)
+                      </p>
+                      <p className="font-mono text-emerald-800 text-[10.5px] selection:bg-emerald-100">
+                        Email: <strong className="font-bold text-emerald-950">maria.ortiz@loshalcones.cl</strong> &rarr; Clave (RUT): <strong className="font-black bg-emerald-100/70 px-1.5 py-0.5 rounded text-emerald-950">543210</strong>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. PARENTS MANUAL */}
+                <div className="bg-slate-50/70 border border-slate-200/60 rounded-2xl p-5 text-slate-900 shadow-xs relative overflow-hidden">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-1 rounded-lg bg-slate-100 text-slate-800">
+                      <Info className="w-4 h-4 text-slate-600 shrink-0" />
+                    </div>
+                    <h5 className="text-[12.5px] font-black uppercase tracking-tight text-slate-800 font-sans">
+                      GUÍA DE ACCESO (APODERADOS Y ALUMNOS INICIALES)
+                    </h5>
+                  </div>
+                  
+                  <div className="text-[11px] text-slate-500 mb-3 leading-snug">
+                    Por favor, ingresa el <strong>nombre del apoderado o del alumno</strong> y los últimos 6 dígitos de su teléfono como clave:
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-1">
+                    {/* Family 1 */}
+                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                      <div>
+                        <p className="font-extrabold text-slate-800"> Laura Silva</p>
+                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Mateo, Lucas, Leonardo, Alan, Alejandro y Luis</span></p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">345678</span>
+                      </div>
+                    </div>
+
+                    {/* Family 2 */}
+                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                      <div>
+                        <p className="font-extrabold text-slate-800"> Carlos Pérez</p>
+                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Santiago, Javier, Manuel, Carlos y Gustavo</span></p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">456789</span>
+                      </div>
+                    </div>
+
+                    {/* Family 3 */}
+                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                      <div>
+                        <p className="font-extrabold text-slate-800"> María Ruiz</p>
+                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Valentín, Sebastián, Alexis, Héctor y Gabriel</span></p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">567890</span>
+                      </div>
+                    </div>
+
+                    {/* Family 4 */}
+                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                      <div>
+                        <p className="font-extrabold text-slate-800"> Rosa Díaz</p>
+                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Diego, Maximiliano, Rodrigo, Jorge y Arturo</span></p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">678901</span>
+                      </div>
+                    </div>
+
+                    {/* Family 5 */}
+                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                      <div>
+                        <p className="font-extrabold text-slate-800"> Héctor Castro</p>
+                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Matías, Bryan, Fernando, Ricardo y Óscar</span></p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">789012</span>
+                      </div>
+                    </div>
+
+                    {/* Family 6 */}
+                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                      <div>
+                        <p className="font-extrabold text-slate-800"> Sonia López</p>
+                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Thiago, Kevin, Christian, David y Víctor</span></p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">890123</span>
+                      </div>
+                    </div>
+
+                    {/* Family 7 */}
+                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                      <div>
+                        <p className="font-extrabold text-slate-800"> Andrés Sosa</p>
+                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Daniel, Emiliano, Roberto y Miguel</span></p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">901234</span>
+                      </div>
+                    </div>
+
+                    {/* Family 8 */}
+                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                      <div>
+                        <p className="font-extrabold text-slate-800"> Gabriela Torres</p>
+                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Nicolás, Alejandro, Ian, Felipe y Sergio</span></p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">234567</span>
+                      </div>
+                    </div>
+
+                    {/* Family 9 */}
+                    <div className="bg-white border border-slate-150 p-2.5 rounded-xl text-[11px] flex justify-between items-center gap-2">
+                      <div>
+                        <p className="font-extrabold text-slate-800"> Manuel Vargas</p>
+                        <p className="text-[9.5px] text-slate-500">Tutor de: <span className="font-semibold text-slate-700">Ángel, Gael, Eduardo, Josué y Francisco</span></p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-black bg-slate-100 text-indigo-700 px-2 py-1 rounded font-mono text-xs">556677</span>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
             </motion.div>
           )}
 
